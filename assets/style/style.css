@@ -1,0 +1,20 @@
+.nav-item-active {
+    color: orangered !important;
+    font-weight: bold;
+}
+
+.btn-orange {
+    background-color: orangered;
+}
+
+.navbar {
+    height: 7vh;
+}
+
+.form-container {
+    height: 93vh;
+}
+
+.form-container form {
+    width: 500px;
+}
