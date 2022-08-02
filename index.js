@@ -31,24 +31,22 @@ app.get('/contact', (req, res) => {
 })
 
 app.post('/form-blog', (req, res) => {
-    const data = req.body
+    // Destructuring assignment
+    const { title, content, image } = req.body
 
-    data.author = 'Jody Septiawan'
-    data.postAt = new Date()
+    db.connect((err, client, done) => {
+        if (err) throw err
 
-    console.log(data);
+        const query = `INSERT INTO tb_blog(title, content, image) VALUES ('${title}', '${content}', '${image}');`
 
+        client.query(query, (err) => {
+            if (err) throw err
+            done()
 
-    if(data.checkbox) {
-        data.checkbox = true
-    }else {
-        data.checkbox = false
-    }
+            res.redirect('/blog')
+        })
+    })
 
-
-    blogs.push(data)
-
-    res.redirect('/blog')
 })
 
 app.get('/form-blog', (req, res) => {
@@ -62,7 +60,7 @@ app.get('/blog', (req, res) => {
             return console.log(err);
         }
 
-        const query = 'SELECT * FROM tb_blog'
+        const query = 'SELECT * FROM tb_blog ORDER BY id DESC'
 
         client.query(query, (err, result) => {
             if (err) throw err
@@ -86,29 +84,41 @@ app.get('/blog', (req, res) => {
     })
 })
 
-app.get('/blog-detail/:index', (req, res) => {
-    const index = req.params.index
+app.get('/blog-detail/:id', (req, res) => {
+    const id = req.params.id
+
+    db.connect((err, client, done) => {
+        if (err) throw err
+        
+        const query = `SELECT * FROM tb_blog WHERE id = ${id};`
+
+        client.query(query, (err, result) => {
+            if (err) throw err
+            done()
+
+            let blog = result.rows[0]
+
+            blog.time = getFullTime(blog.post_at)
+            blog.author = 'Jody Septiawan'
+
+            res.render('blog-detail', { blog })
+        })
+    })
     
-    const blog = blogs[index]
-
-    const newBlog = {
-        ...blog,
-        author: `Mr. ${blog.author}`,
-        time: getFullTime(blog.postAt),
-        isLogin: isLogin
-    }
-
-    console.log(newBlog);
-
-    res.render('blog-detail', { blog: newBlog })
 })
 
-app.get('/delete-blog/:idx', (req,res) => {
-    const idx = req.params.idx // idx == index
-
-    blogs.splice(idx,1)
-
-    res.redirect('/blog')
+app.get('/delete-blog/:id', (req,res) => {
+    const id = req.params.id // idx == index
+    
+    db.connect((err, client, done) => {
+        if (err) throw err;
+        const query = `DELETE FROM tb_blog WHERE id = ${id};`
+        client.query(query, (err) => {
+            if (err) throw err;
+            done()
+            res.redirect('/blog')
+        })
+    })
 })
 
 // Not found route custome

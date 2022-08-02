@@ -45,6 +45,12 @@
         </div>
       {{/if}}
 
+      {{#unless blogs.length}}
+        <div class="text-center mt-5 h1 bg-secondary py-5 rounded text-white">
+          No data
+        </div>
+      {{/unless}}
+
       {{#each blogs}}
       <!-- dynamic content would be here -->
         <div class='blog-list-item'>
@@ -58,12 +64,12 @@
               {{#if this.isLogin}}
                 <div class='button-group'>
                   <a class='btn-edit'>Edit Post</a>
-                  <a href="/delete-blog/{{@index}}" class='btn-post'>Delete Blog</a>
+                  <a href="/delete-blog/{{this.id}}" class='btn-post'>Delete Blog</a>
                 </div>
               {{/if}}
             <h1>
-              <a  href="/blog-detail/{{@index}}" target='_blank'>
-                {{this.title}}
+              <a  href="/blog-detail/{{this.id}}" target='_blank'>
+                {{this.title}} 
               </a>
             </h1>
             <div class='detail-blog-content'>
