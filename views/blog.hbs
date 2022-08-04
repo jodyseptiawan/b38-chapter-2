@@ -75,7 +75,7 @@
         <div class='blog-list-item'>
           <div class='blog-image'>
             <img
-              src='/public/assets/blog-img.png'
+              src={{this.image}}
               alt='Pasar Coding di Indonesia Dinilai Masih Menjanjikan'
             />
           </div>
@@ -92,7 +92,12 @@
               </a>
             </h1>
             <div class='detail-blog-content'>
-              {{this.time}} | {{this.author}}
+              {{this.time}} | 
+              {{#if this.name}} 
+                {{this.name}}
+              {{else}}
+                🤷🏼
+              {{/if}}
             </div>
             <p>
               {{this.content}}

@@ -4,9 +4,11 @@ const session = require('express-session')
 const flash = require('express-flash')
 
 const db = require('./connection/db')
+const upload = require('./middlewares/uploadFile')
 
 const app = express()
 const port = 5000
+const PATH = 'http://localhost:5000/uploads/'
 const isLogin = true
 let blogs = [] // global variable
 
@@ -31,6 +33,7 @@ db.connect((err, _, done) => {
 app.set('view engine', 'hbs')
 
 app.use('/public', express.static(__dirname + '/public'))
+app.use('/uploads', express.static(__dirname + '/uploads'))
 
 app.use(express.urlencoded({extended: false}))
 
@@ -42,40 +45,58 @@ app.get('/contact', (req, res) => {
     res.render('contact')
 })
 
-app.post('/form-blog', (req, res) => {
+app.post('/form-blog', upload.single('image'), (req, res) => {
     // Destructuring assignment
-    const { title, content, image } = req.body
-
+    const { title, content } = req.body
     const user_id = req.session.user.id
+    const fileName = req.file.filename
 
     db.connect((err, client, done) => {
         if (err) throw err
 
-        const query = `INSERT INTO tb_blog(title, content, image, author_id) VALUES ('${title}', '${content}', '${image}', '${user_id}');`
+        const query = `INSERT INTO tb_blog(title, content, image, author_id) VALUES ('${title}', '${content}', '${fileName}', '${user_id}');`
 
         client.query(query, (err) => {
             if (err) throw err
             done()
-
-            res.redirect('/blog')
         })
     })
+
+    res.redirect('/blog')
 })
 
 app.get('/form-blog', (req, res) => {
+
+    if (req.session.isLogin != true) {
+        req.flash('warning', 'Please login')
+        return res.redirect('/login')
+    }
+
     res.render('form-blog')
 })
 
 app.get('/blog', (req, res) => {
-
-    // console.log(req.session);
+    let query = '';
 
     db.connect((err, client, done) => {
         if (err) {
             return console.log(err);
         }
 
-        const query = 'SELECT * FROM tb_blog ORDER BY id DESC'
+        if (req.session.isLogin == true) {
+            // If Login
+            query = `SELECT tb_blog.*, tb_user.name, tb_user.email 
+                        FROM tb_blog LEFT JOIN tb_user
+                        ON tb_user.id = tb_blog.author_id 
+                        WHERE tb_blog.author_id = ${req.session.user.id}
+                        ORDER BY tb_blog.id DESC;`
+        } else {
+            // If not Login
+            query = `SELECT tb_blog.*, tb_user.name, tb_user.email 
+                        FROM tb_blog LEFT JOIN tb_user
+                        ON tb_user.id = tb_blog.author_id
+                        ORDER BY tb_blog.id DESC`;
+        }
 
         client.query(query, (err, result) => {
             if (err) throw err
@@ -85,13 +106,15 @@ app.get('/blog', (req, res) => {
             const newBlogs = data.map((blog) => {
                 const newBlog = {
                     ...blog,
-                    author: `Mr. Jody Septiawan`,
                     time: getFullTime(blog.post_at),
-                    isLogin: req.session.isLogin
+                    isLogin: req.session.isLogin,
+                    image: PATH + blog.image
                 }
         
                 return newBlog
             })
+
+            console.log(newBlogs);
 
             res.render('blog', { user: req.session.user, isLogin: req.session.isLogin, blogs: newBlogs })
         })
@@ -105,7 +128,10 @@ app.get('/blog-detail/:id', (req, res) => {
     db.connect((err, client, done) => {
         if (err) throw err
         
-        const query = `SELECT * FROM tb_blog WHERE id = ${id};`
+        const query = `SELECT tb_blog.*, tb_user.name, tb_user.email 
+                        FROM tb_blog LEFT JOIN tb_user
+                        ON tb_user.id = tb_blog.author_id
+                        WHERE tb_blog.id = ${id};`
 
         client.query(query, (err, result) => {
             if (err) throw err
@@ -114,7 +140,7 @@ app.get('/blog-detail/:id', (req, res) => {
             let blog = result.rows[0]
 
             blog.time = getFullTime(blog.post_at)
-            blog.author = 'Jody Septiawan'
+            blog.image = PATH + blog.image
 
             res.render('blog-detail', { blog })
         })
